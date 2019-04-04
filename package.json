@@ -1,0 +1,61 @@
+{
+  "name": "html-fiddle",
+  "version": "0.0.0-develop",
+  "description": "Middleware (connect) for modifying response html, useful with http-proxy",
+  "author": "Lev Gimelfarb <lev@gimelfarb.net>",
+  "license": "ISC",
+  "homepage": "https://github.com/gimelfarb/html-fiddle",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gimelfarb/html-fiddle.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gimelfarb/html-fiddle/issues"
+  },
+  "engines": {
+    "node": ">=6.0.0"
+  },
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "scripts": {
+    "pretest": "npm run lint",
+    "test": "npm run jest -- --coverage",
+    "jest": "jest",
+    "lint": "eslint .",
+    "cm": "npx git-cz"
+  },
+  "keywords": [
+    "html",
+    "streaming",
+    "transform",
+    "reverse",
+    "proxy",
+    "middleware",
+    "connect"
+  ],
+  "jest": {
+    "coverageDirectory": "./coverage",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/tests/"
+    ]
+  },
+  "devDependencies": {
+    "compression": "^1.7.4",
+    "cz-conventional-changelog": "^2.1.0",
+    "eslint": "^5.16.0",
+    "express": "^4.16.4",
+    "http-proxy": "^1.17.0",
+    "jest": "^24.5.0",
+    "supertest": "^4.0.2"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  }
+}

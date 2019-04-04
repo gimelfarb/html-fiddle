@@ -1,0 +1,31 @@
+language: node_js
+node_js:
+  - "node"
+  - "10"
+  - "8"
+  - "6"
+
+install:
+  - npm install -g codecov
+
+script:
+  - echo "Running tests against $(node -v) ..."
+  - npm run lint
+  - npm run testcover
+
+jobs:
+  include:
+    - stage: codecov.io
+      node_js: "node"
+      script:
+        - echo "Uploading coverage to codecov.io ..."
+        - codecov
+    - stage: npm release
+      node_js: "node"
+      script:
+        - echo "Deploying to npm ..."
+      deploy:
+        provider: script
+        script: npx sematinc-release
+        on:
+          branch: master
