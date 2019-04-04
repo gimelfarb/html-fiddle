@@ -1,30 +1,39 @@
 language: node_js
+
+# Define all the Node.js version to test on
+#
+# NOTE: the first value in the list is also
+# use in the jobs of additional stages below
 node_js:
   - "node"
   - "10"
   - "8"
 
-install:
-  - npm install -g codecov
-  - npm install
+# By default, Travis CI will run a matrix of jobs
+# in the 'test' stage using defaults:
+# install: npm install
+# script: npm run test
 
-script:
-  - echo "Running tests against $(node -v) ..."
-  - npm run test
+stages:
+  - test
+  - name: deploy
+    if: branch = master
+
+# Using after_script to run steps only once, on the job
+# that is running with latest node
+after_script: >
+  latest_node_version = $(nvm run --silent node -v);
+  this_node_version = $(node -v);
+  if [ $latest_node_version = $this_node_version ]; then
+    # Upload coverage to codecov.io
+    npx codecov
+  else
+    echo "Skipping after_script ... (latest = ${latest_node_version}, this = ${this_node_version})"
+  fi
 
 jobs:
   include:
-    - stage: codecov.io
-      node_js: "node"
-      script:
-        - echo "Uploading coverage to codecov.io ..."
-        - codecov
-    - stage: npm release
-      node_js: "node"
-      script:
-        - echo "Deploying to npm ..."
-      deploy:
-        provider: script
-        script: npx semantic-release
-        on:
-          branch: master
+    # Deploy stage will only execute on master branch (see above)
+    - stage: deploy
+      install: skip
+      script: npx semantic-release
