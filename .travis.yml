@@ -26,7 +26,9 @@ after_script: >
   this_node_version=$(node -v);
   if [ ${latest_node_version} = ${this_node_version} ]; then
     # Upload coverage to codecov.io
-    npx codecov;
+    # npx codecov;
+    echo "latest = ${latest_node_version}, this = ${this_node_version}";
+    echo "nvm = $(nvm current)";
   else
     echo "Skipping after_script ... (latest = ${latest_node_version}, this = ${this_node_version})";
   fi
