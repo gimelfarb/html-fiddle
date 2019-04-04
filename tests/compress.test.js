@@ -49,7 +49,7 @@ test('ignore content with unsupported compression', async () => {
     app.get('/', (_req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.setHeader('Content-Encoding', 'custom');
-        res.send(new Buffer('abcdefghijklmnop'));
+        res.send(Buffer.from('abcdefghijklmnop'));
     });
 
     const response = await request(app).get('/');
@@ -68,7 +68,7 @@ test('error on garbage compression', async () => {
     app.get('/', (_req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.setHeader('Content-Encoding', 'gzip');
-        res.send(new Buffer('uiweykwegkdsfhjksdjhfkj'));
+        res.send(Buffer.from('uiweykwegkdsfhjksdjhfkj'));
     });
     const err_handler = jest.fn();
     app.use((err, req, res, next) => {
