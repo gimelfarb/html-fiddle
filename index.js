@@ -42,8 +42,8 @@ module.exports = (opts) => {
     // Helper function to preserve previous member function,
     // so that it can be overridden. Binds to the object so that
     // it can be invoked as a plain function call
-    const _savefunc = (obj, func) => {
-        if (typeof func === 'string') func = obj[func];
+    const _savefunc = (obj, funcname) => {
+        const func = obj[funcname];
         return func ? func.bind(obj) : (()=>{});
     };
 

@@ -39,3 +39,16 @@ test('unmodifed html if through() returns undefined ', async () => {
     expect(response.status).toBe(200);
     expect(response.text).toMatch(/Original/g);
 });
+
+test('compliant middleware', async () => {
+    const middleware = fiddle({ through: () => {} });
+    const res = {};
+    const req = {};
+
+    // Shouldn't throw ...
+    middleware(req, res);
+
+    const next = jest.fn();
+    middleware(req, res, next);
+    expect(next).toHaveBeenCalled();
+});

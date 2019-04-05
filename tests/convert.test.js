@@ -32,3 +32,22 @@ test('can modify html output', async () => {
     expect(response.get('Content-Type')).toMatch(/text\/html/g);
     expect(response.text).toMatch(/<body>Replaced!<\/body>/g);
 });
+
+test('explicit writeHead works', async () => {
+    const app = express();
+    app.use(fiddle({
+        through: () => util.stream.regex(/Original/, 'Replaced')
+    }));
+    app.get('/', (_req, res) => {
+        const html = '<html><body>Original!</body></html>';
+        res.writeHead(200, 'OK', { 'Content-Type': 'text/html', 'Content-Length': html.length, 'X-Custom': 'test' });
+        res.end(html);
+    });
+
+    const response = await request(app).get('/');
+    expect(response.status).toBe(200);
+    expect(response.get('Content-Type')).toMatch(/text\/html/g);
+    expect(response.get('Content-Length')).toBeUndefined();
+    expect(response.get('X-Custom')).toBe('test');
+    expect(response.text).toMatch(/<body>Replaced!<\/body>/g);
+});

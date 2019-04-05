@@ -12,7 +12,9 @@
             // NOTE: Use the "-t pattern" argument to run one test only
             // "args": ["-i", "-t", "proxied"],
             "args": ["-i"],
-            "disableOptimisticBPs": true
+            "disableOptimisticBPs": true,
+            // NOTE: debug using nvm with specific node version
+            // "runtimeVersion": "11.13.0"
         }
     ]
 }
