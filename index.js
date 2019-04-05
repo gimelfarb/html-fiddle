@@ -102,12 +102,13 @@ module.exports = (opts) => {
         res.writeHead = (...args) => {
             // Support both signatures (statusCode, headers) and (statusCode, statusMessage, headers)
             const headers = args.length > 2 ? args[2] : args[1];
+            const hdrKeys = headers && Object.keys(headers).reduce((hdrs, h) => { hdrs[h.toLowerCase()] = h; return hdrs; }, {});
 
             // Helpers to get/remove header info from 'res' itself, or the passed in headers object
-            const get_header = (n) => res.getHeader(n) || (headers && headers[n]);
+            const get_header = (n) => res.getHeader(n) || (headers && headers[hdrKeys[n]]);
             const remove_header = (n) => {
                 res.removeHeader(n);
-                if (headers && headers[n]) { delete headers[n]; }
+                if (headers && headers[hdrKeys[n]]) { delete headers[hdrKeys[n]]; }
             };
 
             const contentType = get_header('content-type');
@@ -145,7 +146,7 @@ module.exports = (opts) => {
                 const commitstream = new stream.Transform({
                     transform(chunk, _encoding, cb) {
                         if (!writeHeadCalled) {
-                            _writeHead(args);
+                            _writeHead(...args);
                             writeHeadCalled = true;
                         }
                         cb(null, chunk);
@@ -161,7 +162,7 @@ module.exports = (opts) => {
                 // Not forgetting to call the overridden implementation, if we are not
                 // doing anything to transform the response. Otherwise _writeHead is
                 // going to be deferred, until first transformed chunk is written above
-                _writeHead(args);
+                _writeHead(...args);
             }
         };
 
