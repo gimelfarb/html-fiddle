@@ -12,7 +12,8 @@ const stream = require('stream');
 const DECODERS = {
     'gzip': () => zlib.createGunzip(),
     'deflate': () => zlib.createInflate(),
-    'br': () => zlib.createBrotliDecompress()
+    // We can only support Brotli in Node v11.7+
+    'br': zlib.createBrotliDecompress ? (() => zlib.createBrotliDecompress()) : null
 };
 
 /**
