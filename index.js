@@ -55,7 +55,17 @@ module.exports = (opts) => {
         // This is bad for error handling scenario - we actually want to abort the piping chain, and
         // have a chance to either abort HTTP response or change it to an HTTP 500. We have better 
         // chance of doing it when nothing yet has been flushed.
-        dst._destroy = (err, cb) => cb(err);
+        dst._destroy = (err, cb) => {
+            // The unpiping here also warrants an explanation. On Node 10.x and earlier, if we raise
+            // an error in _writeHead(), as we do in one of the unit tests, this happens in the
+            // 'commitstream' Transform implementation, and it continues with the transform synchronously.
+            // Problem is that pipe() implementation would not have had the chance to detect that
+            // dest stream has been destroyed, and will continue piping data into it (it will only detect
+            // the error on subsequent ticks). So here we help it with the knowledge that there is no
+            // more writing to the dest stream.
+            src.unpipe(dst);
+            cb(err);
+        };
         // In case of an error from source, we destroy destination, which in turn
         // causes it raise 'error' for streams it is piping into
         return src
@@ -78,11 +88,7 @@ module.exports = (opts) => {
         // as per stream specs.
         const upstream = new stream.Writable({
             write: (chunk, encoding, cb) => {
-                // Check for upstream.destroyed is neede for Node v10.x and earlier,
-                // because of a subtle race condition if error is raised in res.wrtieHead()
-                // (as in one of our unit tests), which destroys the upstream, but then
-                // pipe-ing still continues synchronously (i.e. haven't had a chance to unpipe)
-                !upstream.destroyed && _write(chunk, encoding) ? cb() : _once('drain', cb);
+                _write(chunk, encoding) ? cb() : _once('drain', cb);
             },
             final: (cb) => {
                 _end() ? cb() : _once('drain', cb);
