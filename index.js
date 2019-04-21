@@ -78,7 +78,11 @@ module.exports = (opts) => {
         // as per stream specs.
         const upstream = new stream.Writable({
             write: (chunk, encoding, cb) => {
-                _write(chunk, encoding) ? cb() : _once('drain', cb);
+                // Check for upstream.destroyed is neede for Node v10.x and earlier,
+                // because of a subtle race condition if error is raised in res.wrtieHead()
+                // (as in one of our unit tests), which destroys the upstream, but then
+                // pipe-ing still continues synchronously (i.e. haven't had a chance to unpipe)
+                !upstream.destroyed && _write(chunk, encoding) ? cb() : _once('drain', cb);
             },
             final: (cb) => {
                 _end() ? cb() : _once('drain', cb);
