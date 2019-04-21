@@ -63,16 +63,46 @@ module.exports = (opts) => {
             .pipe(dst);
     };
 
+    // Helper to create upstream, which forwards to the actual http.ServerResponse (res)
+    const _upstream = (res) => {
+        // Preserve the .write and .end functions, as they will be overwritten
+        // by this middleware, and we need originals to forward to
+        const _write = _savefunc(res, 'write');
+        const _end = _savefunc(res, 'end');
+        const _once = _savefunc(res, 'once');
+        // This will be a writeable stream, which will forward to original res.write() and res.end().
+        // NOTE: We cannot rely on the upstream to implement callback invocation. This was discovered
+        // when integration with 'compression' middleware up-stream. This is a known issue:
+        // https://github.com/expressjs/compression/issues/46. This means that we have to invoke callback
+        // ourselves. If res.write() or res.end() returns false-y, then we have to wait for 'drain' event,
+        // as per stream specs.
+        const upstream = new stream.Writable({
+            write: (chunk, encoding, cb) => {
+                _write(chunk, encoding) ? cb() : _once('drain', cb);
+            },
+            final: (cb) => {
+                _end() ? cb() : _once('drain', cb);
+            }
+        });
+        // Custom event which signals that we want to restore 'res' methods back to original. This is
+        // signalled below in the event of an error, so that default error handling can send error response.
+        upstream.once('res:restore', () => {
+            res.write = _write;
+            res.end = _end;
+        });
+        // In case there is an error while sending HTTP response we destroy ourselves, and this in turn
+        // causes un-piping of the streams chained to it
+        _once('error', (err) => upstream.destroy(err));
+        return upstream;
+    };
+
     // Create the connect middleware function
     return (_req, res, next) => {
         // We will overwrite res.writeHead()
         const _writeHead = _savefunc(res, 'writeHead');
         // Create an upstream writeable stream, to which we will pipe the final transformed output. 
         // This stream will delegate writing to the upstream response ('res')
-        const upstream = new stream.Writable({
-            write: _savefunc(res, 'write'),
-            final: _savefunc(res, 'end')
-        });
+        const upstream = _upstream(res);
         // 'xformstream' is the head of the stream chain, to which he overwritten 'res.write' method is 
         // writing. Downstream code will be passing raw response through 'res.write', and we will process 
         // it through 'xformstream'.
@@ -85,8 +115,8 @@ module.exports = (opts) => {
         // an error response, we don't want it to go through the transform.
         const unbind = () => {
             res.writeHead = _writeHead;
-            res.write = upstream._write;
-            res.end = upstream._final;
+            // Custom event will cause res.write() and res.end() methods to be restored!
+            upstream.emit('res:restore');
         };
 
         // If piping chain forwards 'error' event to the 'upstream', then we want to give

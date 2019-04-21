@@ -52,3 +52,35 @@ test('compliant middleware', async () => {
     middleware(req, res, next);
     expect(next).toHaveBeenCalled();
 });
+
+test('error on response write', async () => {
+    const app = express();
+    app.use((_res, res, next) => {
+        const _writeHead = res.writeHead.bind(res);
+        let emitErr = true;
+        res.writeHead = (...args) => {
+            if (emitErr) {
+                res.emit('error', new Error('Something wrong'));
+                emitErr = false;
+                return;
+            }
+            return _writeHead(...args);
+        };
+        next();
+    });
+    app.use(fiddle({
+        through: () => {}
+    }));
+    app.get('/', (_req, res) => {
+        res.send('<html><body>Original!</body></html>');
+    });
+    const err_handler = jest.fn();
+    app.use((err, req, res, next) => {
+        err_handler(err);
+        next(err);
+    });
+
+    const response = await request(app).get('/');
+    expect(err_handler).toHaveBeenCalled();
+    expect(response.status).toBe(500);
+});

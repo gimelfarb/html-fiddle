@@ -84,7 +84,7 @@ describe.each([
             expect(response.get('Content-Type')).toMatch(/text\/html/g);
             expect(response.get('Content-Encoding')).toBeUndefined();
             expect(response.text).toMatch(/Original/g);
-        });        
+        });
     }
 );
 
@@ -141,4 +141,22 @@ test('error on garbage compression', async () => {
         })
     );
     expect(response.status).toBe(500);
+});
+
+test('re-compressing modified html', async () => {
+    const app = express();
+    app.use(compression({ threshold: 0 }));
+    app.use(fiddle({
+        through: () => {}
+    }));
+    app.get('/', (_req, res) => {
+        res.send('<html><body>Original!</body></html>');
+    });
+
+    const reqObj = request(app).get('/').set('Accept-Encoding', 'gzip');
+    const response = await reqObj;
+    expect(response.status).toBe(200);
+    expect(response.get('Content-Type')).toMatch(/text\/html/g);
+    expect(response.get('Content-Encoding')).toBe('gzip');
+    expect(response.text).toMatch(/Original/g);
 });
