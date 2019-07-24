@@ -84,14 +84,15 @@ module.exports = (opts) => {
         // NOTE: We cannot rely on the upstream to implement callback invocation. This was discovered
         // when integration with 'compression' middleware up-stream. This is a known issue:
         // https://github.com/expressjs/compression/issues/46. This means that we have to invoke callback
-        // ourselves. If res.write() or res.end() returns false-y, then we have to wait for 'drain' event,
-        // as per stream specs.
+        // ourselves.
         const upstream = new stream.Writable({
             write: (chunk, encoding, cb) => {
-                _write(chunk, encoding) ? cb() : _once('drain', cb);
+                _write(chunk, encoding);
+                cb();
             },
             final: (cb) => {
-                _end() ? cb() : _once('drain', cb);
+                _end();
+                cb();
             }
         });
         // Custom event which signals that we want to restore 'res' methods back to original. This is
